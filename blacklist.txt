@@ -1,0 +1,3 @@
+v_kammersrohr.bezirksgrenzen_bezirksgrenzabschnitt
+v_kammersrohr.bodenbedeckung_bbnachfuehrung
+v_kammersrohr.tseinteilung_toleranzstufepos
