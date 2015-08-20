@@ -13,6 +13,16 @@ class PostgresqlDatabase:
         self.dbpwd = dbparams['dbpwd']
         self.dburl = "host='"+self.dbhost+"' dbname='"+self.dbdatabase+"' user='"+self.dbusr+"' password='"+self.dbpwd+"'"
 
+
+    def prepare_list(self, table_names):
+        print "fubar"
+        logging.debug("Postgis Version: " +  self.postgis_version())
+
+        transformation_tables = {}
+
+
+
+
     def get_user_tables(self, dbschema=None):
         query = """
         SELECT table_schema, table_name
@@ -33,10 +43,6 @@ class PostgresqlDatabase:
             con = psycopg2.connect(self.dburl)
             #con = psycopg2.connect("host='localhost' dbname='asdf' user='"+self.dbusr+"' password='"+self.dbpwd+"'")
             cur = con.cursor()
-            #cur.execute('SELECT version()')
-            #ver = cur.fetchone()
-            #print ver
-
             cur.execute(query)
             rows = cur.fetchall()
             for row in rows:
@@ -51,3 +57,21 @@ class PostgresqlDatabase:
                 raise UnboundLocalError(e)
 
         return tables
+
+    def postgis_version(self):
+        query = "SELECT PostGIS_Lib_Version();"
+
+        try:
+            con = psycopg2.connect(self.dburl)
+            cur = con.cursor()
+            cur.execute(query)
+            ver = cur.fetchone()
+            return ver[0]
+        except psycopg2.DatabaseError, e:
+            raise psycopg2.DatabaseError(e)
+        finally:
+            try:
+                if con:
+                    con.close()
+            except UnboundLocalError, e:
+                raise UnboundLocalError(e)

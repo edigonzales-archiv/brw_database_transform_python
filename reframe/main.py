@@ -41,32 +41,42 @@ def main():
     pg = PostgresqlDatabase(dbparams)
 
     try:
-        tables = pg.get_user_tables(opts.dbschema)
-
         if opts.white:
-            white = read_black_or_white_list(opts.white)
-            #print white
+            whitelist = read_black_or_white_list(opts.white)
 
         if opts.black:
-            black = read_black_or_white_list(opts.black)
-            #print black
+            blacklist = read_black_or_white_list(opts.black)
 
         if opts.dbschema == "all":
-            print "all"
+            tables = pg.get_user_tables()
         elif opts.dbschema:
-            print "ein schema plus white minus black"
-        else:
-            print "nur whitelist falls vorhanden... minus blacklist."
+            tables = pg.get_user_tables(opts.dbschema)
+
+        # Append whitelist to tables.
+        tables.extend(whitelist)
+
+        # Remove blacklisted tables.
+        tables = [x for x in tables if x not in blacklist]
 
     except (psycopg2.DatabaseError, UnboundLocalError) as e:
         logging.error(str(e))
         sys.exit(1)
 
+    if len(tables) == 0:
+        logging.info("No tables found.")
+        sys.exit(1)
+
+    # Sort out anything that has no geometry.
+    # Figure out:
+    # - SRID
+    # - geometry constraint.
+    pg.prepare_list(tables)
+
 
 
 def read_black_or_white_list(filename):
     with open(filename) as f:
-        return f.readlines()
+        return [line.strip() for line in f]
 
 if __name__ == '__main__':
     sys.exit(main())
