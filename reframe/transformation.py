@@ -19,9 +19,3 @@ class Transformation:
         fields = QgsFields()
         fields.append(QgsField("first", QVariant.Int))
         fields.append(QgsField("second", QVariant.String))
-
-        print
-
-#fields = QgsFields()
-#fields.append(QgsField("first", QVariant.Int))
-#fields.append(QgsField("second", QVariant.String))
