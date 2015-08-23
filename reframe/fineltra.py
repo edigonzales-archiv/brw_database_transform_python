@@ -4,8 +4,7 @@ from qgis.core import *
 
 import os
 
-# Wird Container...
-class Transformation:
+class Fineltra:
 
     def __init__(self):
         self.triangles = []
