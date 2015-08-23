@@ -58,7 +58,7 @@ class Options:
         self.parser.add_argument('--dbdatabase',
                                 action = 'store',
                                 type = str,
-                                default = 'xanadu',
+                                default = 'xanadu2',
                                 dest ='dbdatabase',
                                 help = 'The database name. Default: xanadu.')
 

@@ -8,6 +8,7 @@ import psycopg2
 
 from options import Options
 from postgresqldatabase import PostgresqlDatabase
+from transformation import Transformation
 
 def main():
     # Read the options and arguments from the command line (w/ some default settings).
@@ -36,8 +37,6 @@ def main():
     whitelist = []
     blacklist = []
 
-    # tables.append(whitelist)
-
     pg = PostgresqlDatabase(dbparams)
 
     try:
@@ -58,21 +57,24 @@ def main():
         # Remove blacklisted tables.
         tables = [x for x in tables if x not in blacklist]
 
+        if len(tables) == 0:
+            logging.info("No tables found.")
+            sys.exit(1)
+
+        # Sort out anything that has no geometry.
+        # Figure out:
+        # - SRID
+        # - geometry constraint.
+        prepared_tables = pg.prepare_list(tables)
+
+        ## TEST:
+        transform = Transformation()
+        transform.fubar()
+
+
     except (psycopg2.DatabaseError, UnboundLocalError) as e:
         logging.error(str(e))
         sys.exit(1)
-
-    if len(tables) == 0:
-        logging.info("No tables found.")
-        sys.exit(1)
-
-    # Sort out anything that has no geometry.
-    # Figure out:
-    # - SRID
-    # - geometry constraint.
-    pg.prepare_list(tables)
-
-
 
 def read_black_or_white_list(filename):
     with open(filename) as f:
