@@ -61,7 +61,8 @@ def main():
             logging.info("No tables found.")
             sys.exit(1)
 
-        # Sort out anything that has no geometry.
+        # Sort out anything that has no geometry or one we don't need to
+        # transform.
         # Figure out:
         # - SRID
         # - geometry constraint.
