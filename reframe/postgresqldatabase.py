@@ -17,7 +17,7 @@ class PostgresqlDatabase:
         self.x_range = range(100000,1000000)
         self.y_range = range(10000,1000000)
 
-        print self.dburl
+        logging.debug(self.dburl)
 
     def prepare_list(self, table_names):
         logging.debug("Postgis Version: " +  self.postgis_version())
@@ -37,7 +37,7 @@ class PostgresqlDatabase:
             tables = [] # All geometry attributes from one table.
             for column in columns:
                 #print column, columns[column]
-                logging.debug("Do we need to transform geometry column: '" + column + "'?")
+                logging.debug("Do we need to transform the geometry column: '" + column + "'?")
 
                 # Check if this geometry needs to be transformed.
                 # Depends on SRID. But also SRID=-1 needs to be
@@ -71,35 +71,16 @@ class PostgresqlDatabase:
         table_name = table_name.split('.')[1]
 
         query = """
-        SELECT DISTINCT (pc2.relname || '.' || r.conname) AS fullname,
-        r.conname AS constraint_name,
-        r.contype AS constraint_type,
-        r.condeferrable AS is_deferrable,
-        r.condeferred AS is_deferred,
-        r.confupdtype AS update_action,
-        r.confdeltype AS delete_action,
-        pc1.relname AS foreign_table,
-        pc2.relname AS this_table,
-        CASE WHEN kcu1.constraint_schema IS NULL
-         THEN 'public'
-         ELSE kcu1.constraint_schema
-        END as this_schema,
-        pg_catalog.pg_get_constraintdef(r.oid, true) as sqlstr
-        FROM
-        (
-         SELECT oid, *
-         FROM pg_constraint
-         WHERE contype = 'c'
-        ) as r
-        LEFT JOIN pg_class AS pc1 ON pc1.oid = r.confrelid
-        LEFT JOIN pg_class AS pc2 ON pc2.oid = r.conrelid
-        LEFT JOIN information_schema.key_column_usage AS kcu1 ON
-        (kcu1.table_name=pc2.relname AND kcu1.constraint_name=r.conname)
+        SELECT n.nspname, pc.relname, r.contype, r.conname, r.consrc, pg_catalog.pg_get_constraintdef(r.oid, true) as sqlstr
+        FROM pg_class as pc, pg_constraint as r, pg_namespace as n
+        WHERE pc.oid = r.conrelid
+        AND pc.relnamespace = n.oid
+        AND r.contype = 'c'
         """
 
-        query += " WHERE kcu1.constraint_schema = '" + schema_name + "'"
-        query += " AND pc2.relname = '" + table_name + "'"
-        query += " ORDER BY 1;"
+        query += " AND n.nspname = '" + schema_name + "'"
+        query += " AND pc.relname = '" + table_name + "'"
+        query += " ORDER BY 1, 2, 4;"
 
         print query
 
@@ -116,7 +97,9 @@ class PostgresqlDatabase:
                 print row
 
                 # here we need some magic to find out if it's a srid constraint.
-
+                # remove all whitespace then something like srid(-1) or srid(21871) should be found in string
+                # if found -> disable check constraint (set to true to enable it afterwards with 2056)
+                # ALTER TABLE products DROP CONSTRAINT some_name; -> we need to save the name of the constraint
             #print rows
 #            for row in rows:
 
@@ -137,7 +120,7 @@ class PostgresqlDatabase:
         # - SRID = -1 but x/y in correct range (600,200) -> True
         # - Result is empty (no geometry) -> True (should check for a geometry constraint though...)
 
-        # OMG: ST_X/Y do not exist in Postgis 1.5...
+        # OMG: ST_X() do not exist in Postgis 1.5...
         # Will use ST_XMax()
         query = """
         SELECT ST_SRID("""+column_name+""") as srid,
