@@ -17,12 +17,15 @@ class PostgresqlDatabase:
         self.x_range = range(100000,1000000)
         self.y_range = range(10000,1000000)
 
+        print self.dburl
+
     def prepare_list(self, table_names):
         logging.debug("Postgis Version: " +  self.postgis_version())
 
         transformation_tables = {} # All tables we need to transform (w/ one or more geometry columns)
 
         for table_name in table_names:
+            logging.debug(" ")
             logging.debug("***** "+table_name+" *****")
 
             columns = self.get_geometry_columns(table_name)
@@ -42,7 +45,7 @@ class PostgresqlDatabase:
                 transform = self.has_transformable_geometry(table_name, column)
 
                 if transform:
-                    logging.debug("Yes!")
+                    logging.debug("Yes! (" + str(transform) + ")")
 
                     # Now check if there is a srid constraint that we need to disable/enable.
                     constraint = self.has_srid_constraint(table_name)
@@ -57,10 +60,10 @@ class PostgresqlDatabase:
                     tables.append(table)
 
                 else:
-                    loggind.debug("No.")
+                    logging.debug("No.")
 
             transformation_tables[table_name] = tables
-            
+
         return transformation_tables
 
     def has_srid_constraint(self, table_name):
@@ -98,6 +101,8 @@ class PostgresqlDatabase:
         query += " AND pc2.relname = '" + table_name + "'"
         query += " ORDER BY 1;"
 
+        print query
+
         try:
             con = psycopg2.connect(self.dburl)
             cur = con.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -108,7 +113,7 @@ class PostgresqlDatabase:
                 return
 
             for row in rows:
-                pass
+                print row
 
                 # here we need some magic to find out if it's a srid constraint.
 
@@ -148,16 +153,16 @@ class PostgresqlDatabase:
             row = cur.fetchone()
 
             if not row:
-                return True
+                return "Geometry column is empty (= no rows)"
 
             srid = row['srid']
             x = row['x']
             y = row['y']
 
-            if srid == 217811:
-                return True
+            if srid == 21781:
+                return 21781
             elif int(x) in self.x_range and int(y) in self.y_range:
-                return True
+                return str(int(x)) + "/" + str(int(y))
             else:
                 return False
         except psycopg2.DatabaseError, e:
@@ -233,12 +238,14 @@ class PostgresqlDatabase:
             for row in rows:
                 tables.append(row['table_schema']+"."+row['table_name'])
         except psycopg2.DatabaseError, e:
+            print str(e)
             raise psycopg2.DatabaseError(e)
         finally:
             try:
                 if con:
                     con.close()
             except UnboundLocalError, e:
+                print str(e)
                 raise UnboundLocalError(e)
 
         return tables

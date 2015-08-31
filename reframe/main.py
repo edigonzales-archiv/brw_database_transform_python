@@ -37,6 +37,9 @@ def main():
     whitelist = []
     blacklist = []
 
+## WIE SIEHT DAS MIT DEN RECHTEN AUS?
+## Falls keine Rechte, kann ichs einfach nicht lesen.
+
     pg = PostgresqlDatabase(dbparams)
 
     try:
@@ -69,11 +72,14 @@ def main():
         prepared_tables = pg.prepare_list(tables)
 
         ## TEST:
-        transform = Transformation()
-        transform.fubar()
+        #transform = Transformation()
+        #transform.fubar()
 
 
     except (psycopg2.DatabaseError, UnboundLocalError) as e:
+        # Needs some love: it throws "local variable 'con' referenced before assignment"
+        # even if it is a database error. Other way round: the database error is not
+        # thrown visually.
         logging.error(str(e))
         sys.exit(1)
 
